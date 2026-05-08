@@ -5,6 +5,11 @@
   "type": "module",
   "description": "Local archive of CryptoPunks transaction history pulled from cryptopunks.app",
   "scripts": {
-    "fetch": "node scripts/fetch-transactions.mjs"
+    "fetch": "node scripts/fetch-transactions.mjs",
+    "fetch-v1": "node scripts/fetch-v1.mjs",
+    "fetch-v1-wrapped": "node scripts/fetch-v1-wrapped.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.48.11"
   }
 }
