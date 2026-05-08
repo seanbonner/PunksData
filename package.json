@@ -1,0 +1,10 @@
+{
+  "name": "punk-data",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local archive of CryptoPunks transaction history pulled from cryptopunks.app",
+  "scripts": {
+    "fetch": "node scripts/fetch-transactions.mjs"
+  }
+}
