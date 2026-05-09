@@ -7,7 +7,10 @@
   "scripts": {
     "fetch": "node scripts/fetch-transactions.mjs",
     "fetch-v1": "node scripts/fetch-v1.mjs",
-    "fetch-v1-wrapped": "node scripts/fetch-v1-wrapped.mjs"
+    "fetch-v1-wrapped": "node scripts/fetch-v1-wrapped.mjs",
+    "fetch-v2-assigns": "node scripts/fetch-v2-assigns.mjs",
+    "compute-holders": "node scripts/compute-holders.mjs",
+    "fetch-wallet-activity": "node scripts/fetch-wallet-activity.mjs"
   },
   "dependencies": {
     "viem": "^2.48.11"
