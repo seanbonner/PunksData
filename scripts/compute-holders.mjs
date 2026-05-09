@@ -52,12 +52,19 @@ async function main() {
     if (!cur || ts > cur.ts) map[id] = { ts, holder: holder.toLowerCase() };
   }
 
+  // Genesis ownership events — the assign (V2) or claim (V1) that first put a
+  // punk into someone's hands. Used downstream to detect "never moved".
+  const v2First = {};
+  const v1First = {};
+
   console.log("walking V2 assigns + transfers...");
   const v2Main = {};
   // V2 Assigns: the airdrop on 2017-06-23 (covers all 10K, including punks
   // that never moved afterwards and so don't appear in transfers).
   for await (const r of readJsonl("v2_assigns.jsonl")) {
-    take(v2Main, Number(r.punkIndex), r.timestamp, r.to);
+    const id = Number(r.punkIndex);
+    take(v2Main, id, r.timestamp, r.to);
+    if (v2First[id] == null || r.timestamp < v2First[id]) v2First[id] = r.timestamp;
   }
   // V2 PunkTransfers — V2 fixed the V1 bug, so transfers cover both moves
   // and post-sale ownership changes.
@@ -71,7 +78,9 @@ async function main() {
   console.log("walking V1 claims + transfers + sales...");
   const v1Main = {};
   for await (const r of readJsonl("v1_claims.jsonl")) {
-    take(v1Main, Number(r.punkIndex), r.timestamp, r.to);
+    const id = Number(r.punkIndex);
+    take(v1Main, id, r.timestamp, r.to);
+    if (v1First[id] == null || r.timestamp < v1First[id]) v1First[id] = r.timestamp;
   }
   for await (const r of readJsonl("v1_transfers.jsonl")) {
     take(v1Main, Number(r.punkIndex), r.timestamp, r.to);
@@ -88,7 +97,7 @@ async function main() {
   const v1Wrapped = await latestPerPunk("v1wrapped_transfers.jsonl", (r) => ({ id: Number(r.tokenId), ts: r.timestamp, holder: r.to }));
 
   // Resolve end-user holders by chasing wrapper contracts.
-  function resolve(mainMap, wrappedMap, wrapperAddr) {
+  function resolve(mainMap, wrappedMap, wrapperAddr, firstMap) {
     const out = {};
     const ids = new Set([...Object.keys(mainMap), ...Object.keys(wrappedMap)]);
     for (const idStr of ids) {
@@ -96,29 +105,32 @@ async function main() {
       const main = mainMap[id];
       const wrapped = wrappedMap[id];
       if (!main && !wrapped) continue;
+      const firstMoveTs = firstMap[id] ?? null;
       // If main holder is the wrapper contract, the end-user is the wrapped holder.
       if (main && main.holder === wrapperAddr && wrapped && wrapped.holder !== ZERO) {
         out[id] = {
           holder: wrapped.holder,
           lastMoveTs: Math.max(main.ts, wrapped.ts),
+          firstMoveTs,
           wrapped: true,
         };
       } else if (main) {
         out[id] = {
           holder: main.holder,
           lastMoveTs: main.ts,
+          firstMoveTs,
           wrapped: false,
         };
       } else if (wrapped && wrapped.holder !== ZERO) {
         // Edge case: wrapped without main record. Shouldn't happen normally.
-        out[id] = { holder: wrapped.holder, lastMoveTs: wrapped.ts, wrapped: true };
+        out[id] = { holder: wrapped.holder, lastMoveTs: wrapped.ts, firstMoveTs, wrapped: true };
       }
     }
     return out;
   }
 
-  const v2 = resolve(v2Main, v2Wrapped, V2_WRAPPER);
-  const v1 = resolve(v1Main, v1Wrapped, V1_WRAPPER);
+  const v2 = resolve(v2Main, v2Wrapped, V2_WRAPPER, v2First);
+  const v1 = resolve(v1Main, v1Wrapped, V1_WRAPPER, v1First);
 
   console.log(`v2: ${Object.keys(v2).length} punks resolved`);
   console.log(`v1: ${Object.keys(v1).length} punks resolved`);
