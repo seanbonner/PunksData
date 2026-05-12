@@ -2,3 +2,10 @@ node_modules/
 .DS_Store
 *.log
 .env
+
+# Not needed by LostPunks pipeline; wallet activity comes from per-wallet
+# Etherscan txlist queries (fetch-wallet-activity.mjs) which already capture
+# listings/bids/sales as outbound transactions.
+data/bids.jsonl
+data/offers.jsonl
+data/sales.jsonl
