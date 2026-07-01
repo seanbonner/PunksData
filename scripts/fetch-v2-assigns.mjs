@@ -8,7 +8,7 @@ import { existsSync, createWriteStream, readFileSync, writeFileSync } from "node
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { keccak256, parseAbi, toBytes } from "viem";
-import { scrapeEvent } from "./lib/etherscan.mjs";
+import { scrapeEvent, getLatestBlock } from "./lib/etherscan.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -37,17 +37,9 @@ function loadState() {
 }
 function saveState(s) { writeFileSync(STATE_FILE, JSON.stringify(s, null, 2) + "\n"); }
 
-async function getLatestBlock() {
-  const url = `https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_blockNumber&apikey=${KEY}`;
-  const res = await fetch(url).then((r) => r.json());
-  const block = parseInt(res.result, 16);
-  if (Number.isNaN(block)) throw new Error(`eth_blockNumber failed: ${res.message ?? res.result}`);
-  return block;
-}
-
 async function main() {
   const state = loadState();
-  const latest = await getLatestBlock();
+  const latest = await getLatestBlock(KEY);
   const fromBlock = (state.lastBlock ?? V2_DEPLOY_BLOCK - 1) + 1;
   if (fromBlock > latest) { console.log("up to date"); return; }
   console.log(`scraping V2 Assigns blocks ${fromBlock} → ${latest}`);

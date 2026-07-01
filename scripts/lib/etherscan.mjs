@@ -131,4 +131,25 @@ export async function scrapeEvent({ apiKey, address, event, fromBlock, toBlock, 
   return total;
 }
 
+export async function getLatestBlock(apiKey) {
+  const url = `${ETHERSCAN}?chainid=${CHAIN_ID}&module=proxy&action=eth_blockNumber&apikey=${apiKey}`;
+  let attempt = 0;
+  while (true) {
+    let res;
+    try {
+      res = await fetch(url).then((r) => r.json());
+    } catch (err) {
+      attempt++;
+      await sleep(Math.min(30000, 500 * 2 ** attempt));
+      continue;
+    }
+    const block = parseInt(res.result, 16);
+    if (!Number.isNaN(block)) return block;
+    attempt++;
+    const wait = Math.min(30000, 500 * 2 ** attempt);
+    console.warn(`  eth_blockNumber failed (${res.message ?? res.result}); backoff ${wait}ms`);
+    await sleep(wait);
+  }
+}
+
 export { DEFAULT_CHUNK };
