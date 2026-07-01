@@ -52,7 +52,9 @@ function saveState(state) {
 async function getLatestBlock() {
   const url = `https://api.etherscan.io/v2/api?chainid=1&module=proxy&action=eth_blockNumber&apikey=${KEY}`;
   const res = await fetch(url).then((r) => r.json());
-  return parseInt(res.result, 16);
+  const block = parseInt(res.result, 16);
+  if (Number.isNaN(block)) throw new Error(`eth_blockNumber failed: ${res.message ?? res.result}`);
+  return block;
 }
 
 async function main() {

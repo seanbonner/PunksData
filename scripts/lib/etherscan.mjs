@@ -55,7 +55,7 @@ async function getLogs({ apiKey, address, topic0, fromBlock, toBlock, page }) {
     }
     if (j.status === "1") return j.result;
     if (j.status === "0" && /no records found/i.test(j.message)) return [];
-    if (/rate limit|max rate|too many/i.test(j.result || j.message || "")) {
+    if (/rate limit|max rate|too many|timeout|server too busy/i.test(j.result || j.message || "")) {
       attempt++;
       const wait = Math.min(60000, 1000 * 2 ** attempt);
       console.warn(`  rate-limited; backoff ${wait}ms`);
